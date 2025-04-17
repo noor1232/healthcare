@@ -1,40 +1,58 @@
 import streamlit as st
 import google.generativeai as genai
 
-c1, c2 = st.columns([30,50])
+# UI layout
+c1, c2 = st.columns([30, 50])
 c2.title("PredictGuard: Predicting the disease based on symptoms")
 c1.image("logo-removebg-preview.png")
-# st.title("SymptomScan: Predicting the disease based on symptoms")
-# st.write(" ")
-# st.write(" ")
-# st.write(" ")
-# st.write(" ")
-genai.configure(api_key="AIzaSyBPwAuDL6MfppmS1PvlFpSlfAWCrs_7gVs")
-var = ""
-var2=""
 
+# API key setup
+genai.configure(api_key="AIzaSyDcpeye8nmcA_9BnbVvzbz1bv9-ooc2pLM")
 
+# Create Gemini model
 def create_gen_model():
     return genai.GenerativeModel('models/gemini-1.5-pro')
 
-
+# Main logic
 def main():
     query = st.chat_input("Enter the Symptoms:")
-    # st.write(" ")
-    # st.write(" ")
     if query:
         model = create_gen_model()
-        var = f"I'm experiencing some symptoms like {query} While I can't expect a diagnosis from you, can you help me find disease name from some reliable resources online? If you found disease name only give that name. Not give resource name. Give answer in one line. Also give me suggestions that what can be the causes, suggest some precautions to be taken by the patient"
-        response = model.generate_content(var)
-        st.header("Disease Predicted:")
-        st.header(response.text)
 
-        var2=f"I am infected with disease known as {response.text}While I can't expect a diagnosis from you,can you help me to suugest propable medications related to this from some reliable sources online?"
+        # Single prompt asking for disease, causes, precautions, meds in both English and Marathi
+        full_prompt = f"""
+        I have the following symptoms: {query}.
 
-        response2=model.generate_content(var2)
-        st.header("Predicted Solution:")
-        st.header(response2.text)
+        1. Predict the most likely disease. Just mention the name of the disease.
+        2. Suggest possible causes.
+        3. Suggest precautions to take.
+        4. Suggest general medications (if available).
 
+        After providing all this information in **English**, also provide the same details in **Marathi** below it.
 
+        Format:
+
+        Disease:\n
+        Causes:\n
+        Precautions:\n
+        Medications:\n
+
+        रोग:\n
+        कारणे:\n
+        खबरदारी:\n
+        औषधे:\n
+        """
+
+        # Safe response generation with error handling
+        try:
+            response = model.generate_content(full_prompt)
+            if response:
+                st.subheader("Predictions")
+                st.markdown(response.text)
+        except Exception as e:
+            st.error("⚠️ API error: You may have hit your rate limit or quota. Please wait and try again.")
+            st.code(str(e), language='bash')
+
+# Run the app
 if __name__ == "__main__":
     main()
